@@ -1,0 +1,11 @@
+.vs
+obj/Release
+obj/Debug
+obj/BVT
+obj/Container
+obj/BAU-PROTO.csproj.*
+obj/project.nuget.cache
+bin
+node_modules
+.env
+.env.*

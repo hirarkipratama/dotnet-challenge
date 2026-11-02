@@ -1,0 +1,171 @@
+﻿using BAU_PROTO.Persistence;
+using BAU_PROTO.Services.AuthService;
+using BAU_PROTO.Services.JwtService;
+using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace BAU_PROTO.Services.ProductService
+{
+    public class ProductServiceImpl : ProductService
+    {
+
+        private readonly AppDbContext _context;
+        private readonly AuthServiceImpl _authService;
+
+        public ProductServiceImpl(AppDbContext context)
+        {
+            _context = context;
+            _authService = new AuthServiceImpl(context);
+            
+        }
+        public async Task<int> CreateProduct(AddProductDto createProductDto)
+        {
+            try
+            {
+                var validationErrors = createProductDto.InputValidation();
+
+                if (validationErrors.Count > 0)
+                {
+                    throw new ArgumentException(string.Join(", ", validationErrors));
+                }
+
+                var product = new Products
+                {
+                    Name = createProductDto.Name,
+                    Description = createProductDto.Description,
+                    Price = createProductDto.GetPrice()
+                };
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+                return product.Id;
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException(ex.Message);
+            }
+        }
+
+        public async Task<int> DeleteProduct(DeleteProductDto deleteProductDto)
+        {
+            try
+            {
+                var validationErrors = deleteProductDto.InputValidation();
+
+                if (validationErrors.Count > 0)
+                {
+                    throw new ArgumentException(string.Join(", ", validationErrors));
+                }
+
+                var product = await _context.Products.FirstOrDefaultAsync(u => u.Id == deleteProductDto.GetId());
+                if (product != null)
+                {
+                    _context.Products.Remove(product);
+                    await _context.SaveChangesAsync();
+                    return product.Id;
+                }
+                else
+                {
+                    throw new ArgumentException("Already deleted");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException(ex.Message);
+            }
+        }
+
+        public async Task<List<Products>> GetProducts(SearchProductDto? searchProductDto)
+        {
+            try
+            {
+                IQueryable<Products> productQuery = _context.Products;
+                if (searchProductDto == null)
+                {
+
+                } else
+                {
+                    if (!string.IsNullOrEmpty(searchProductDto.Name))
+                    {
+                        productQuery = productQuery.Where(p => p.Name.Contains(searchProductDto.Name));
+                    }
+
+                    if (searchProductDto.page.HasValue && searchProductDto.pageSize.HasValue)
+                    {
+                        productQuery = productQuery
+                            .Skip((searchProductDto.page.Value - 1) * searchProductDto.pageSize.Value)
+                            .Take(searchProductDto.pageSize.Value);
+                    }
+                }
+
+
+                var results = await productQuery.ToListAsync();
+                return results;
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException(ex.Message);
+            }
+        }
+
+        public async Task<int> UpdateProduct(UpdateProducDto updateProducDto)
+        {
+            try
+            {
+                var validationErrors = updateProducDto.InputValidation();
+
+                if (validationErrors.Count > 0)
+                {
+                    throw new ArgumentException(string.Join(", ", validationErrors));
+                }
+
+                var product = await _context.Products.FirstOrDefaultAsync(u => u.Id == updateProducDto.GetId());
+
+                if (product != null)
+                {
+                    product.Price = updateProducDto.GetPrice();
+                    product.Name = updateProducDto.Name;
+                    product.Description = updateProducDto.Description;
+                    product.UpdatedAt = DateTime.UtcNow;
+                    _context.Products.Update(product);
+                    await _context.SaveChangesAsync();
+                    return product.Id;
+                }
+                else
+                {
+                    throw new ArgumentException("Product not found");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException(ex.Message);
+            }
+        }
+
+        public async Task<Products> GetProductSpesific(SpesificSelectProductDto spesificSelectProductDto)
+        {
+            try
+            {
+                var validationErrors = spesificSelectProductDto.InputValidation();
+
+                if (validationErrors.Count > 0)
+                {
+                    throw new ArgumentException(string.Join(", ", validationErrors));
+                }
+
+                var product = await _context.Products.FirstOrDefaultAsync(u => u.Id == spesificSelectProductDto.GetId());
+                if (product != null)
+                {
+                    return product;
+                }
+                else
+                {
+                    throw new ArgumentException("Product not found");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException(ex.Message);
+            }
+        }
+    }
+}

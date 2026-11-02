@@ -1,0 +1,126 @@
+﻿using BAU_PROTO.Services.AuthService;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+
+namespace BAU_PROTO.Controllers.AuthController
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+        private readonly AuthService _authService;
+        public AuthController(AppDbContext context)
+        {
+            _context = context;
+            _authService = new AuthServiceImpl(_context);
+        }
+
+        [HttpPost("register")]
+        public async Task<Object> RegisterUser(RegisterRequestDto inputRegister)
+        {
+            try
+            {
+                var _ = await _authService.RegisterUser(inputRegister);
+                var response = new
+                {
+                    message = "register success"
+                };
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("login")]
+        public async Task<Object> LoginUser(LoginRequestDto inputLogin)
+        {
+            try
+            {
+                var token = await _authService.Login(inputLogin);
+                var response = new
+                {
+                    message = "login success",
+                    data = new
+                    {
+                        access_token = token.ToTuple().Item1,
+                        refresh_token = token.ToTuple().Item2,
+                        user_info = new
+                        {
+                            email = token.ToTuple().Item3.Email,
+                            role = token.ToTuple().Item3.Role,
+                            created_at = token.ToTuple().Item3.CreatedAt
+
+                        }
+                    }
+                };
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("refresh")]
+        [Authorize(AuthenticationSchemes = "RefreshToken")]
+        public async Task<Object> refreshToken()
+        {
+            var result = await HttpContext.AuthenticateAsync("RefreshToken");
+
+            if (!result.Succeeded)
+                return Unauthorized();
+            try
+            {
+
+                var getAuthBearer = Request.Headers["Authorization"].ToString();
+
+                if (string.IsNullOrEmpty(getAuthBearer) || !getAuthBearer.StartsWith("Bearer "))
+                {
+                    return BadRequest(new { message = "Invalid Authorization header" });
+                }
+
+                var refreshToken = Request.Headers["Refreshtoken"].ToString();
+                var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                var newAccessToken = await _authService.RefreshToken(refreshToken, accessToken);
+                var response = new
+                {
+                    message = "refresh token success",
+                    data = new
+                    {
+                        access_token = newAccessToken
+                    }
+                };
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("logout")]
+        public async Task<Object> logout()
+        {
+            try
+            {
+                var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                var doLogout = await _authService.Logout(accessToken)  ;
+                var response = new
+                {
+                    message = "logout success"
+                };
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+    }
+}

@@ -1,0 +1,86 @@
+﻿
+
+<div ng-controller="HomeController">
+    <title>{{ message }}</title>
+    <h2>{{ message }}</h2>
+    <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+            <div class="login-panel panel panel-default">
+                <div class="panel-body" ng-controller="AddEditProductController">
+                    <form>
+                        <fieldset>
+                            <div class="form-group">
+                                <input class="form-control" type="text" placeholder="Nama produk" name="nama" type="text" autofocus ng-model="product.nama">
+                            </div>
+                            <div class="form-group">
+                                <textarea class="form-control" rows="4" cols="50" placeholder="Deskripsi produk" name="desc" type="text" autofocus ng-model="product.desc"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <input class="form-control" placeholder="Harga" name="harga" type="number" autofocus ng-model="product.harga">
+                            </div>
+                            <div class="form-group">
+                                <label style="color: black;" ng-show="loadingStatus">
+                                    Loading...
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label style="color: red;">
+                                    {{ errorMessage }}
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-lg btn-success btn-block" ng-click="addEditProduct()" ng-disabled="loadingStatus"> {{ product.id == null ? 'Add Product' : 'Edit Product' }}</button>
+                            </div>
+                        </fieldset>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" ng-controller="ListProductController">
+        
+        <div class="row">
+            <div class="col-md-5 col-md-offset-1">
+                <input class="form-control" type="text" placeholder="Search Box" name="nama" type="text" autofocus ng-model="namaProduct">
+            </div>
+            <button ng-click="searchPage()" ng-disabled="loadingStatus">
+                Cari
+            </button>
+        </div>
+        <br />
+        <div class="row">
+            <div class="col-md-10 col-md-offset-1">
+                <table class="table table-bordered">
+                    <tr>
+                        <th>Nama produk</th>
+                        <th>Deskripsi produk</th>
+                        <th>Harga</th>
+                        <th>Created Date</th>
+                        <th>Update Date</th>
+                        <th style="width:100px">        </th>
+                    </tr>
+                    <tr> <td colspan="6" style="text-align:center;" ng-show="products.length == 0 && !loadingStatus">data empty</td></tr>
+                    <tr> <td colspan="6" style="text-align:center;" ng-show="loadingStatus">Loading....</td></tr>
+                    <tr ng-repeat="product in products" ng-show="!loadingStatus">
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.description }}</td>
+                        <td>{{ product.price }}</td>
+                        <td>{{ product.createdAt | date:'medium' }}</td>
+                        <td>{{ product.updatedAt | date:'medium' }}</td>
+                        <td><button ng-click="getSelectedItem({id: product.id,nama: product.name,desc: product.description,harga: product.price})">Edit</button><button ng-click="deleteSelectedItem(product.id)">Delete</button></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <br />
+        <div class="row">
+            <div class="col-md-1 col-md-offset-2">
+                <button ng-disabled="loadingStatus || page == 1" ng-click="prevPage()">Prev</button>
+            </div>
+            <div class="col-md-1 col-md-offset-6">
+                <button ng-disabled="loadingStatus || lastPage" ng-click="nextPage()">Next</button>
+            </div>
+        </div>
+
+    </div>

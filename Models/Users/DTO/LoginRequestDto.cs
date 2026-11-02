@@ -1,0 +1,52 @@
+﻿using BAU_PROTO.Persistence;
+using System.Text.RegularExpressions;
+
+public class LoginRequestDto
+{
+    public string Email { get; set; }
+    public string Password { get; set; }
+
+    public List<string> InputValidation()
+    {
+        List<string> errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            errors.Add("Email is required.");
+        } else
+        {
+            var pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!System.Text.RegularExpressions.Regex.IsMatch(Email, pattern, RegexOptions.IgnoreCase))
+            {
+                errors.Add("Email is not valid.");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(Password))
+        {
+            errors.Add("Password is required.");
+        } else         {
+            try
+            {
+                var decrypPassword = DecryptPassword();
+                if (decrypPassword.Length < 6)
+                {
+                    errors.Add("Password is to short.");
+                }
+            }
+            catch (Exception)
+            {
+                errors.Add("Password is not valid.");
+            }
+        }
+
+        return errors;
+    }
+
+    public string DecryptPassword()
+    {
+        var key = Environment.GetEnvironmentVariable(ConstantConfig.KeyFront);
+
+        return SecurityEncrypt.Decrypt(Password, key);
+    }
+}
